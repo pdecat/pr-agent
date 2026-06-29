@@ -55,7 +55,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 FROM service AS gitlab_webhook
 COPY pr_agent pr_agent
-CMD ["python", "-m", "gunicorn", "-k", "uvicorn_worker.UvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py", "--forwarded-allow-ips", "*", "pr_agent.servers.gitlab_webhook:app"]
+CMD ["python", "-m", "gunicorn", "-k", "pr_agent.servers.gitlab_uvicorn_worker.GitlabWebhookUvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py", "--forwarded-allow-ips", "*", "pr_agent.servers.gitlab_webhook:app"]
 
 FROM service AS azure_devops_webhook
 COPY pr_agent pr_agent
