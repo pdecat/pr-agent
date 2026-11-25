@@ -240,3 +240,27 @@ def test_codecommit_persistent_header_is_translated(language):
     body = CodeCommitProvider._persistent_body_for_target(
         f"## Guía\n\n{marker}\n\nbody", True, "review", marker, {"source_commit": "abc123"})
     assert f"{marker}\n\n#### (Revisión actualizada hasta el commit abc123)\n" in body
+
+
+@pytest.mark.parametrize("gfm_supported", [True, False])
+def test_merge_recommendation_and_risk_level_are_translated(language, gfm_supported):
+    language("fr-FR")
+    output = convert_to_markdown_v2(
+        _review(merge_recommendation="changes_required", risk_level="high"), gfm_supported=gfm_supported)
+
+    for label in ("Recommandation de merge", "Modifications requises", "Niveau de risque", "Élevé"):
+        assert label in output
+    for label in ("Merge recommendation", "Changes required", "Risk level", "High"):
+        assert label not in output
+
+
+@pytest.mark.parametrize(("value", "expected"), [
+    ("no_concerns_found", "No concerns found"),
+    ("needs_review", "Needs review"),
+    ("Changes required", "Changes required"),
+    ("something_else", "Something else"),
+])
+def test_merge_recommendation_english_rendering_is_unchanged(language, value, expected):
+    language("en-US")
+    output = convert_to_markdown_v2(_review(merge_recommendation=value), gfm_supported=False)
+    assert f"Merge recommendation: {expected}" in output

@@ -205,6 +205,15 @@ def replace_suggestion_blocks(body: str, replacement: str) -> str:
     return "".join(parts)
 
 
+def _known_value_text(value, key_prefix: str, known: tuple) -> str:
+    """Catalog text for a known enum value of a review field, else the value as the model wrote it."""
+    raw = str(value).strip()
+    normalized = raw.lower().replace(" ", "_")
+    if normalized in known:
+        return t(f"{key_prefix}{normalized}")
+    return raw.replace("_", " ").capitalize() if raw else t("review.unknown")
+
+
 def convert_to_markdown_v2(output_data: dict,
                            gfm_supported: bool = True,
                            incremental_review=None,
@@ -337,23 +346,24 @@ def convert_to_markdown_v2(output_data: dict,
         elif key.lower() == 'structural_reach':
             markdown_text += render_structural_reach(value, gfm_supported)
         elif 'risk level' in key_nice.lower():
-            risk_value = str(value).strip().lower().replace("_", " ")
-            risk_display = risk_value.capitalize() if risk_value else "Unknown"
+            risk_display = _known_value_text(value, "review.risk_", ("low", "medium", "high"))
+            risk_label = t('review.risk_level')
             if gfm_supported:
                 markdown_text += "<tr><td>"
-                markdown_text += f"{emoji}&nbsp;<strong>Risk level</strong>: {risk_display}"
+                markdown_text += f"{emoji}&nbsp;<strong>{risk_label}</strong>: {risk_display}"
                 markdown_text += "</td></tr>\n"
             else:
-                markdown_text += f"### {emoji} Risk level: {risk_display}\n\n"
+                markdown_text += f"### {emoji} {risk_label}: {risk_display}\n\n"
         elif 'merge recommendation' in key_nice.lower():
-            recommendation = str(value).strip().replace("_", " ")
-            recommendation_display = recommendation.capitalize() if recommendation else "Unknown"
+            recommendation_display = _known_value_text(
+                value, "review.merge_", ("no_concerns_found", "needs_review", "changes_required"))
+            recommendation_label = t('review.merge_recommendation')
             if gfm_supported:
                 markdown_text += "<tr><td>"
-                markdown_text += f"{emoji}&nbsp;<strong>Merge recommendation</strong>: {recommendation_display}"
+                markdown_text += f"{emoji}&nbsp;<strong>{recommendation_label}</strong>: {recommendation_display}"
                 markdown_text += "</td></tr>\n"
             else:
-                markdown_text += f"### {emoji} Merge recommendation: {recommendation_display}\n\n"
+                markdown_text += f"### {emoji} {recommendation_label}: {recommendation_display}\n\n"
         elif key.lower() == 'failure_modes':
             modes = parse_failure_modes(value)
             heading = f"{emoji} Failure modes"
